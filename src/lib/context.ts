@@ -3,7 +3,7 @@
  * Responsible for loading files and preparing context for LLM injection
  */
 
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import type { FileSearchResult } from "./memory_store";
 
@@ -17,23 +17,52 @@ export interface ContextBlock {
 
 /**
  * Loads full file content from search results
- * Returns structured context block with scores attached
+ * Always includes user.md first if it exists
+ * Can limit number of results via maxResults parameter
  */
 export async function buildContext(
   searchResults: FileSearchResult[],
   memoryDir: string = "./memory",
+  maxResults: number = 6,
 ): Promise<ContextBlock> {
   const entries = [];
 
-  for (const result of searchResults) {
-    const filePath = join(memoryDir, result.file);
-    const content = readFileSync(filePath, "utf-8");
+  // Always include user.md first if it exists
+  const userPath = join(memoryDir, "user.md");
+  if (existsSync(userPath)) {
+    try {
+      const content = readFileSync(userPath, "utf-8");
+      entries.push({
+        filename: "user.md",
+        score: 1.0, // Self context always scores highest
+        content: content.trim(),
+      });
+    } catch (e) {
+      console.error("Failed to load user.md:", e);
+    }
+  }
 
-    entries.push({
-      filename: result.file,
-      score: result.score,
-      content: content.trim(),
-    });
+  // Load search results (up to maxResults-1 to account for user.md)
+  const resultsToLoad = Math.min(
+    searchResults.length,
+    maxResults - entries.length,
+  );
+
+  for (let i = 0; i < resultsToLoad; i++) {
+    const result = searchResults[i];
+    if (!result) continue;
+
+    const filePath = join(memoryDir, result.file);
+    try {
+      const content = readFileSync(filePath, "utf-8");
+      entries.push({
+        filename: result.file,
+        score: result.score,
+        content: content.trim(),
+      });
+    } catch (e) {
+      console.error(`Failed to load ${result.file}:`, e);
+    }
   }
 
   return { entries };

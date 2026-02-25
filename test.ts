@@ -91,7 +91,7 @@ async function main() {
     // Step 2: Build context
     console.log("\n━".repeat(80));
     console.log("Building context block...\n");
-    const context = await buildContext(searchResults);
+    const context = await buildContext(searchResults, "./memory", 2);
 
     // Step 3: Build prompt
     const promptMsg = buildPrompt(question, context);
