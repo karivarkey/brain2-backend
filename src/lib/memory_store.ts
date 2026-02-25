@@ -20,6 +20,11 @@ export interface SearchResult {
   chunkIndex: number;
 }
 
+export interface FileSearchResult {
+  file: string;
+  score: number;
+}
+
 interface DbHashRow {
   hash: string;
 }
@@ -206,8 +211,9 @@ ${parsed.body}
 
   /**
    * Searches the indexed memory for a query string.
+   * Returns file-level results with best score per file.
    */
-  async search(query: string): Promise<SearchResult[]> {
+  async search(query: string): Promise<FileSearchResult[]> {
     const queryVec = await this.getEmbedding(query);
 
     // Bun generics define the exact expected return shape
@@ -216,7 +222,8 @@ ${parsed.body}
     );
     const rows = getVectorsQuery.all();
 
-    const results: SearchResult[] = [];
+    // Track best score for each file
+    const bestScores = new Map<string, number>();
 
     for (const row of rows) {
       const parsed: unknown = JSON.parse(row.vector);
@@ -228,13 +235,19 @@ ${parsed.body}
         );
       }
 
-      results.push({
-        file: row.file,
-        chunkIndex: row.chunk_index,
-        score: this.cosineSimilarity(queryVec, parsed),
-      });
+      const score = this.cosineSimilarity(queryVec, parsed);
+      const existing = bestScores.get(row.file);
+
+      // Keep the best score for this file
+      if (!existing || score > existing) {
+        bestScores.set(row.file, score);
+      }
     }
 
-    return results.sort((a, b) => b.score - a.score).slice(0, this.config.topK);
+    // Convert map to array and sort
+    return Array.from(bestScores.entries())
+      .map(([file, score]) => ({ file, score }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, this.config.topK);
   }
 }

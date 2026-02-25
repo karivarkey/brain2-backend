@@ -49,9 +49,7 @@ async function main() {
     console.log("Top Results:\n");
 
     for (const result of results) {
-      console.log(
-        `${result.file}  |  chunk ${result.chunkIndex}  |  score: ${result.score.toFixed(4)}`,
-      );
+      console.log(`${result.file}  |  ${result.score.toFixed(2)}`);
     }
 
     return;
