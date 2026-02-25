@@ -158,15 +158,26 @@ Use EXACTLY:
 ===MEMORY_MUTATION_END===
 
 Rules:
-• Only ONE mutation block per response.
-• Keep mutation concise and factual.
-• No commentary inside mutation.
+• You may output MULTIPLE mutation blocks per response when needed.
+• Each mutation must use its own START/END marker pair.
+• Keep mutations concise and factual.
+• No commentary inside mutation blocks.
 • Filenames lowercase with underscores.
 • Prefer "update" when entity already exists.
 • Capture emotional evolution when meaningful.
 • Update user.md for identity-level changes.
 
-After mutation, continue with your reasoning.
+Example of multiple mutations:
+
+===MEMORY_MUTATION_START===
+{"action": "update", "file": "user", "changes": {"append": "Relevant insight"}}
+===MEMORY_MUTATION_END===
+
+===MEMORY_MUTATION_START===
+{"action": "update", "file": "aleesa", "changes": {"append": "Related update"}}
+===MEMORY_MUTATION_END===
+
+After all mutations, continue with your reasoning.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
