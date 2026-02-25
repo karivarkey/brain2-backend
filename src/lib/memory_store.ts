@@ -2,7 +2,7 @@ import { Database } from "bun:sqlite";
 import { readdirSync, readFileSync } from "fs";
 import { join } from "path";
 import crypto from "crypto";
-
+import { parseMemoryFile } from "./memory_parser";
 // --- Types & Interfaces ---
 
 export interface MemoryConfig {
@@ -136,8 +136,7 @@ export class MemoryStore {
 
   /**
    * Syncs the local filesystem with the database.
-   */
-  async refreshIndex(): Promise<void> {
+   */ async refreshIndex(): Promise<void> {
     const files = readdirSync(this.config.memoryDir).filter((f) =>
       f.endsWith(".md"),
     );
@@ -164,12 +163,28 @@ export class MemoryStore {
 
       const existing = checkHashQuery.get({ $file: file });
 
+      // If the file hash hasn't changed, skip re-embedding
       if (existing !== null && existing.hash === fileHash) {
         continue;
       }
 
       deleteFileQuery.run({ $file: file });
-      const chunks = this.chunkText(content);
+
+      // --- NEW: Parse and construct identity-aware text ---
+      const parsed = parseMemoryFile(content);
+
+      const embedText = `
+ID: ${parsed.id}
+TYPE: ${parsed.type}
+ALIASES: ${parsed.aliases.join(", ")}
+ROLES: ${parsed.roles.join(", ")}
+
+${parsed.body}
+      `.trim();
+
+      // Chunk the enriched text instead of the raw content
+      const chunks = this.chunkText(embedText);
+      // --------------------------------------------------
 
       for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
@@ -181,7 +196,7 @@ export class MemoryStore {
           $id: `${file}_${i}`,
           $file: file,
           $idx: i,
-          $hash: fileHash,
+          $hash: fileHash, // We still use the raw file hash to detect file changes
           $vec: JSON.stringify(vector),
         });
       }
