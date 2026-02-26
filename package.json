@@ -3,6 +3,10 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "embed": "bun test.ts embed",
+    "clean": "sqlite3 chat.db \"DELETE FROM messages; DELETE FROM session_state;\" && sqlite3 memory_index.db \"DELETE FROM embeddings;\""
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },

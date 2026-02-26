@@ -24,14 +24,17 @@ export async function buildContext(
     entries.push(userContext);
   }
 
-  // Load search results (up to maxResults-1 to account for user.md)
+  // Filter out user.md from search results to avoid duplicates
+  const filteredResults = searchResults.filter((r) => r.file !== "user.md");
+
+  // Load remaining search results
   const resultsToLoad = Math.min(
-    searchResults.length,
+    filteredResults.length,
     maxResults - entries.length,
   );
 
   const searchEntries = loadSearchResults(
-    searchResults.slice(0, resultsToLoad),
+    filteredResults.slice(0, resultsToLoad),
     memoryDir,
     resultsToLoad,
   );

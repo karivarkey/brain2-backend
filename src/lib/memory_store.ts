@@ -52,6 +52,7 @@ function isEmbeddingResponse(value: unknown): value is { embedding: number[] } {
 export class MemoryStore {
   private db: Database;
   private config: MemoryConfig;
+  private indexedFiles: Set<string> = new Set();
 
   constructor(config: Partial<MemoryConfig> = {}) {
     this.config = {
@@ -66,6 +67,7 @@ export class MemoryStore {
 
     this.db = new Database(this.config.dbPath);
     this.initDb();
+    this.loadIndexedFiles();
   }
 
   private initDb(): void {
@@ -79,6 +81,40 @@ export class MemoryStore {
       );
       CREATE INDEX IF NOT EXISTS idx_file ON embeddings(file);
     `);
+  }
+
+  /**
+   * Load the list of files currently in the index
+   */
+  private loadIndexedFiles(): void {
+    const query = this.db.query<{ file: string }, []>(
+      "SELECT DISTINCT file FROM embeddings",
+    );
+    const rows = query.all();
+    this.indexedFiles = new Set(rows.map((r) => r.file));
+  }
+
+  /**
+   * Check if there are new or modified files in the memory directory
+   */
+  private hasNewFiles(): boolean {
+    const files = readdirSync(this.config.memoryDir).filter((f) =>
+      f.endsWith(".md"),
+    );
+
+    // Quick check: different number of files
+    if (files.length !== this.indexedFiles.size) {
+      return true;
+    }
+
+    // Check if any file in directory is not in index
+    for (const file of files) {
+      if (!this.indexedFiles.has(file)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   // --- Internal Utils ---
@@ -96,14 +132,22 @@ export class MemoryStore {
   }
 
   private async getEmbedding(text: string): Promise<number[]> {
+    // Truncate very long text to avoid exceeding embedding model limits
+    const maxLength = 2000; // Safe limit for most embedding models
+    const truncatedText =
+      text.length > maxLength ? text.slice(0, maxLength) + "..." : text;
+
     const res = await fetch(this.config.ollamaUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: this.config.model, prompt: text }),
+      body: JSON.stringify({ model: this.config.model, prompt: truncatedText }),
     });
 
     if (!res.ok) {
-      throw new Error(`Ollama Error: ${res.status} ${res.statusText}`);
+      const errorBody = await res.text().catch(() => "(no body)");
+      throw new Error(
+        `Ollama Error: ${res.status} ${res.statusText}\nResponse: ${errorBody}\nQuery length: ${truncatedText.length} chars`,
+      );
     }
 
     const data: unknown = await res.json();
@@ -207,13 +251,24 @@ ${parsed.body}
       }
       console.info(`Synced: ${file}`);
     }
+
+    // Update the indexed files set
+    this.loadIndexedFiles();
   }
 
   /**
    * Searches the indexed memory for a query string.
    * Returns file-level results with best score per file.
+   * Automatically refreshes index if new files are detected.
    */
   async search(query: string): Promise<FileSearchResult[]> {
+    // Auto-refresh if new files detected
+    if (this.hasNewFiles()) {
+      console.log("🔄 New memory files detected, refreshing index...");
+      await this.refreshIndex();
+      console.log("✅ Index refreshed");
+    }
+
     const queryVec = await this.getEmbedding(query);
 
     // Bun generics define the exact expected return shape

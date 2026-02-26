@@ -20,12 +20,15 @@ export interface MemoryMeta {
 }
 
 export interface MemoryMutation {
-  action: "create" | "update";
+  action: "create" | "update" | "delete";
   file: string;
   changes: {
+    metadata?: Record<
+      string,
+      string | number | boolean | string[] | Record<string, unknown>
+    >;
     append?: string;
-    add_alias?: string;
-    add_role?: string;
+    delete_lines?: string[];
   };
 }
 
