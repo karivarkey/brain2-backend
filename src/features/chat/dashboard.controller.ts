@@ -65,7 +65,7 @@ export function dashboardController(req: Request, res: Response): void {
 
     // Get session statistics
     const totalSessions = getTotalSessions();
-    const allSessions = getAllSessionsWithMessages(3);
+    const allSessions = getAllSessionsWithMessages(10);
 
     const stats: DashboardStats = {
       memories: {

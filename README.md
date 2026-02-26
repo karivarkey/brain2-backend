@@ -179,7 +179,7 @@ Retrieve message history for a conversation.
 
 #### GET `/dashboard`
 
-Get comprehensive dashboard statistics including memory counts, session information, and recent activity.
+Get comprehensive dashboard statistics including memory counts, session information, and recent activity. Returns the last 10 messages from each conversation session.
 
 **Response:**
 
