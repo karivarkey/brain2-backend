@@ -10,8 +10,12 @@ import {
   updateMemoryController,
   deleteMemoryController,
 } from "./memory.controller";
+import { refreshEmbeddingsMiddleware } from "./memory.middleware";
 
 const router = Router();
+
+// Apply the refresh embeddings middleware to all routes
+router.use(refreshEmbeddingsMiddleware);
 
 // GET /api/memory - List all memories
 router.get("/memory", listMemoriesController);

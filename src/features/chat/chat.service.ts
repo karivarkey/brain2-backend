@@ -16,16 +16,10 @@ import type { MemoryMutation } from "../../core";
 
 import { GeminiProvider } from "../../providers";
 import { summarizeConversation } from "../../providers";
-import { MemoryStore } from "../../lib/memory_store";
+import { memoryStore } from "../memory/memory.middleware";
 
 const TOKEN_THRESHOLD = 50_000;
 const MEMORY_DIR = "./memory";
-
-// Global memory store instance - shared across all conversations
-const memoryStore = new MemoryStore({
-  memoryDir: MEMORY_DIR,
-  topK: 6, // Retrieve top 6 relevant memory files
-});
 
 function shouldAutoRemember(message: string): boolean {
   const hasRemember = /\bremember\b/i.test(message);
