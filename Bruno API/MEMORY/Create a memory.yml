@@ -1,7 +1,7 @@
 info:
   name: Create a memory
   type: http
-  seq: 8
+  seq: 7
 
 http:
   method: POST
@@ -16,7 +16,7 @@ http:
           "tags": ["important"]
         },
         "content": "# My Note\n\nContent here"
-      }
+      }  
   auth: inherit
 
 settings:
