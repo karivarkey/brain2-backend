@@ -3,6 +3,7 @@ import cors from "cors";
 import chatRouter from "./src/features/chat/chat.router";
 import memoryRouter from "./src/features/memory/memory.router";
 import reminderRouter from "./src/features/reminder/reminder.router";
+import onboardingRouter from "./src/features/onboarding/onboarding.router";
 import { reminderScheduler } from "./src/features/reminder/reminder.scheduler";
 
 const app = express();
@@ -12,6 +13,7 @@ app.use(express.json());
 app.use("/", chatRouter);
 app.use("/api", memoryRouter);
 app.use("/api", reminderRouter);
+app.use("/", onboardingRouter);
 
 // Start the reminder scheduler
 reminderScheduler.start();

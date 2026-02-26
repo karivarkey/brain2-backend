@@ -5,10 +5,10 @@ info:
 
 http:
   method: GET
-  url: "{{prod-ip}}/chat/:chat_id"
+  url: "{{dev}}/chat/:chat_id"
   params:
     - name: chat_id
-      value: conv_3
+      value: conv_1772114483982
       type: path
   auth: inherit
 

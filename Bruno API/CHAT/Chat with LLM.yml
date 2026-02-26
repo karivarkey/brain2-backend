@@ -5,13 +5,13 @@ info:
 
 http:
   method: POST
-  url: "{{prod-ip}}/chat"
+  url: "{{dev}}/chat"
   body:
     type: json
     data: |-
       {
-        "conversation_id": "conv_3",
-          "message": "Hey jarvis this is a test request to check if I can ping you to my prod env"
+        "conversation_id": "conv_1",
+          "message": "Hey jarvis, block my calendar for teusday , make sure the whole day I will be busy"
       }
   auth: inherit
 

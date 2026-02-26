@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: "{{prod-ip}}/api/memory"
+  url: "{{dev}}/api/memory"
   auth: inherit
 
 settings:

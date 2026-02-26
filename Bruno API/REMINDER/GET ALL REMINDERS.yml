@@ -5,10 +5,10 @@ info:
 
 http:
   method: GET
-  url: "{{dev}}/reminders/:user_id"
+  url: "{{dev}}/api/reminders/:user_id"
   params:
     - name: user_id
-      value: ""
+      value: DNnHDECbD2YCdMWrrlhHgMnQpz02
       type: path
   auth: inherit
 

@@ -1,0 +1,32 @@
+meta {
+  name: Onboard User
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/onboard
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "userId": "user-001",
+    "timezone": "Asia/Kolkata",
+    "data": [
+      "I'm 21 years old",
+      "I'm a frontend developer with React and TypeScript experience",
+      "I'm from Kochi, Kerala, India",
+      "I'm currently an intern at FoodHub in Chennai",
+      "I study at RSET and have a presentation coming up on March 3rd at 8:30 AM",
+      "I love low-level engineering and AI",
+      "My nickname is Varkey",
+      "I'm returning to college on March 2nd at 8:30 PM",
+      "I'm working on a takeaway app project",
+      "I prefer casual but thoughtful conversations",
+      "I'm optimistic about my career and future opportunities",
+      "I care about family and am willing to adjust schedules for them"
+    ]
+  }
+}
