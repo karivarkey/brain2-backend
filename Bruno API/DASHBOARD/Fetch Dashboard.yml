@@ -1,11 +1,11 @@
 info:
-  name: Fetch all memories
+  name: Fetch Dashboard
   type: http
-  seq: 5
+  seq: 1
 
 http:
   method: GET
-  url: "{{prod-ip}}/api/memory"
+  url: "{{dev}}/dashboard"
   auth: inherit
 
 settings:

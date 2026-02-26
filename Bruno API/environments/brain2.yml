@@ -2,3 +2,5 @@ name: brain2
 variables:
   - name: dev
     value: http://localhost:3000
+  - name: prod-ip
+    value: http://100.94.239.23:3000

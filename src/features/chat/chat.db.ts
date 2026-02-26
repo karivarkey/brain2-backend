@@ -56,3 +56,132 @@ export function upsertSessionState(state: SessionState): void {
     state.token_estimate,
   );
 }
+
+/**
+ * Get total number of unique conversations/sessions
+ */
+export function getTotalSessions(): number {
+  const result = db
+    .query<
+      { count: number },
+      []
+    >(`SELECT COUNT(DISTINCT conversation_id) as count FROM messages`)
+    .get();
+  return result?.count || 0;
+}
+
+/**
+ * Get all unique conversation IDs with their latest message timestamp
+ */
+export function getAllSessions(): Array<{
+  conversation_id: string;
+  message_count: number;
+  last_message_at: string;
+}> {
+  return db
+    .query<
+      {
+        conversation_id: string;
+        message_count: number;
+        last_message_at: string;
+      },
+      []
+    >(
+      `SELECT 
+        conversation_id,
+        COUNT(*) as message_count,
+        MAX(created_at) as last_message_at
+       FROM messages
+       GROUP BY conversation_id
+       ORDER BY last_message_at DESC`,
+    )
+    .all();
+}
+
+/**
+ * Get the most recent N messages from the latest conversation
+ */
+export function getLatestSessionMessages(limit: number = 3): {
+  conversation_id: string;
+  messages: Message[];
+} | null {
+  // Get the latest conversation ID
+  const latestSession = db
+    .query<{ conversation_id: string }, []>(
+      `SELECT conversation_id 
+       FROM messages 
+       GROUP BY conversation_id 
+       ORDER BY MAX(created_at) DESC 
+       LIMIT 1`,
+    )
+    .get();
+
+  if (!latestSession) {
+    return null;
+  }
+
+  // Get the recent messages from that conversation
+  const messages = db
+    .query<Message, [string, number]>(
+      `SELECT * FROM messages 
+       WHERE conversation_id = ? 
+       ORDER BY created_at DESC 
+       LIMIT ?`,
+    )
+    .all(latestSession.conversation_id, limit)
+    .reverse(); // Reverse to get chronological order
+
+  return {
+    conversation_id: latestSession.conversation_id,
+    messages,
+  };
+}
+
+/**
+ * Get recent messages for all sessions
+ * Returns the last N messages for each conversation
+ */
+export function getAllSessionsWithMessages(limit: number = 3): Array<{
+  conversation_id: string;
+  message_count: number;
+  last_message_at: string;
+  messages: Message[];
+}> {
+  // Get all conversation IDs ordered by latest activity
+  const sessions = db
+    .query<
+      {
+        conversation_id: string;
+        message_count: number;
+        last_message_at: string;
+      },
+      []
+    >(
+      `SELECT 
+        conversation_id,
+        COUNT(*) as message_count,
+        MAX(created_at) as last_message_at
+       FROM messages
+       GROUP BY conversation_id
+       ORDER BY last_message_at DESC`,
+    )
+    .all();
+
+  // For each session, get the recent messages
+  return sessions.map((session) => {
+    const messages = db
+      .query<Message, [string, number]>(
+        `SELECT * FROM messages 
+         WHERE conversation_id = ? 
+         ORDER BY created_at DESC 
+         LIMIT ?`,
+      )
+      .all(session.conversation_id, limit)
+      .reverse(); // Reverse to get chronological order
+
+    return {
+      ...session,
+      messages,
+    };
+  });
+}

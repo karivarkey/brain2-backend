@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: "{{dev}}/chat/:chat_id"
+  url: "{{prod-ip}}/chat/:chat_id"
   params:
     - name: chat_id
       value: conv_2

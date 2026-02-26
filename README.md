@@ -205,22 +205,42 @@ Get comprehensive dashboard statistics including memory counts, session informat
   },
   "sessions": {
     "total": 5,
-    "latest": {
-      "conversation_id": "session-123",
-      "message_count": 3,
-      "messages": [
-        {
-          "role": "user",
-          "content": "What's on my schedule today?",
-          "created_at": "2026-02-26T10:30:00.000Z"
-        },
-        {
-          "role": "assistant",
-          "content": "You have a team meeting at 3 PM...",
-          "created_at": "2026-02-26T10:30:05.000Z"
-        }
-      ]
-    }
+    "all": [
+      {
+        "conversation_id": "session-123",
+        "message_count": 12,
+        "last_message_at": "2026-02-26T10:30:05.000Z",
+        "recent_messages": [
+          {
+            "role": "user",
+            "content": "What's on my schedule today?",
+            "created_at": "2026-02-26T10:29:58.000Z"
+          },
+          {
+            "role": "assistant",
+            "content": "You have a team meeting at 3 PM...",
+            "created_at": "2026-02-26T10:30:05.000Z"
+          }
+        ]
+      },
+      {
+        "conversation_id": "session-122",
+        "message_count": 8,
+        "last_message_at": "2026-02-25T15:20:10.000Z",
+        "recent_messages": [
+          {
+            "role": "user",
+            "content": "Remember to buy groceries",
+            "created_at": "2026-02-25T15:20:00.000Z"
+          },
+          {
+            "role": "assistant",
+            "content": "I've added that to your reminders...",
+            "created_at": "2026-02-25T15:20:10.000Z"
+          }
+        ]
+      }
+    ]
   }
 }
 ```
