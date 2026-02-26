@@ -1,13 +1,10 @@
 #!/usr/bin/env bun
 
-import { MemoryStore } from "./src/lib/memory_store";
-import {
-  buildContext,
-  buildPrompt,
-  promptToMessages,
-  GeminiProvider,
-  streamWithMutationCapture,
-} from "./src/lib/llm_engine";
+import { MemoryStore } from "./src/core/memory";
+import { buildContext } from "./src/core/context";
+import { buildPrompt, promptToMessages } from "./src/core/prompt";
+import { GeminiProvider } from "./src/providers";
+import { streamWithMutationCapture } from "./src/core/streaming";
 
 // ------------------ CLI ARG PARSING ------------------
 

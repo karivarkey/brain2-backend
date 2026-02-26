@@ -4,7 +4,7 @@
  */
 
 import type { Request, Response, NextFunction } from "express";
-import { MemoryStore } from "../../lib/memory_store";
+import { MemoryStore } from "../../core/memory";
 
 const MEMORY_DIR = "./memory";
 
