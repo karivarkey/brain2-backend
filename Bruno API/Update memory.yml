@@ -8,8 +8,19 @@ http:
   url: "{{dev}}/api/memory/:id"
   params:
     - name: id
-      value: ""
+      value: aleesa
       type: path
+  body:
+    type: json
+    data: |-
+      {
+        "filename": "my-note",
+        "metadata": {
+          "type": "note",
+          "tags": ["important"]
+        },
+        "content": "# My Note\n\nContent here"
+      }
   auth: inherit
 
 settings:
