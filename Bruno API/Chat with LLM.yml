@@ -10,8 +10,8 @@ http:
     type: json
     data: |-
       {
-        "conversation_id": "conv_1",
-          "message": "Soo i was thinking more about tech stuff , workspace is fully react native , ts , but the system is a mess js mixed with ts , no test cases. CMOpany is super fast moving with features shipped in days and broken in hours and fixed in seconds. Sooo I have a bond with the company for 2 years and I need to excel here : )"
+        "conversation_id": "conv_3",
+          "message": "Hey jarvis , anything to note or remeber before going back to Chennai?"
       }
   auth: inherit
 

@@ -1,0 +1,42 @@
+meta {
+  name: List Memories
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/memory
+  body: none
+  auth: none
+}
+
+params:query {
+  ~type: person
+  ~limit: 10
+}
+
+docs {
+  # List All Memories
+  
+  Returns a list of all memory files.
+  
+  ## Query Parameters
+  - `type` (optional): Filter by memory type (e.g., "person", "project", "event")
+  - `limit` (optional): Limit the number of results
+  
+  ## Response
+  ```json
+  {
+    "memories": [
+      {
+        "id": "user",
+        "filename": "user.md",
+        "type": "identity_model",
+        "last_updated": "2024-05-03",
+        "preview": "Identified user as Geevarghese, a 21-year-old front-end developer..."
+      }
+    ],
+    "total": 5
+  }
+  ```
+}

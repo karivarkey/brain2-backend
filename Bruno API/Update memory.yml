@@ -1,14 +1,14 @@
 info:
-  name: Fetch Conversations
+  name: Update memory
   type: http
-  seq: 3
+  seq: 9
 
 http:
-  method: GET
-  url: "{{dev}}/chat/:chat_id"
+  method: PATCH
+  url: "{{dev}}/api/memory/:id"
   params:
-    - name: chat_id
-      value: conv_2
+    - name: id
+      value: ""
       type: path
   auth: inherit
 

@@ -1,14 +1,14 @@
 info:
-  name: Fetch Conversations
+  name: Delete a memory
   type: http
-  seq: 3
+  seq: 10
 
 http:
-  method: GET
-  url: "{{dev}}/chat/:chat_id"
+  method: DELETE
+  url: "{{dev}}/api/memory/:id"
   params:
-    - name: chat_id
-      value: conv_2
+    - name: id
+      value: aleesa
       type: path
   auth: inherit
 

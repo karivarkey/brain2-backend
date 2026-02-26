@@ -1,0 +1,28 @@
+meta {
+  name: Delete Memory
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/api/memory/test-memory
+  body: none
+  auth: none
+}
+
+docs {
+  # Delete Memory
+  
+  Marks a memory file as deleted (doesn't actually remove the file).
+  
+  ## Path Parameters
+  - `id`: The memory file ID (filename without .md extension)
+  
+  ## Response
+  - 204 No Content on success
+  - 404 Not Found if memory doesn't exist
+  
+  ## Note
+  This implementation marks the file as deleted rather than removing it.
+  The file will have `deleted: true` added to its metadata.
+}

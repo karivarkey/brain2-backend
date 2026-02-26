@@ -1,0 +1,48 @@
+meta {
+  name: Create Memory
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/memory
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "filename": "test-memory",
+    "metadata": {
+      "type": "note",
+      "tags": ["example", "test"]
+    },
+    "content": "This is a test memory file.\n\n## Details\n\nSome additional information here."
+  }
+}
+
+docs {
+  # Create New Memory
+  
+  Creates a new memory file.
+  
+  ## Request Body
+  ```json
+  {
+    "filename": "my-memory",
+    "metadata": {
+      "type": "note",
+      "tags": ["tag1", "tag2"]
+    },
+    "content": "The markdown content of the memory"
+  }
+  ```
+  
+  ## Notes
+  - `filename` should be lowercase with hyphens, underscores, or apostrophes
+  - `metadata` is optional and will be merged with default values
+  - `content` can include markdown formatting
+  
+  ## Response
+  Returns the created memory object (same format as Get Memory)
+}

@@ -1,0 +1,26 @@
+info:
+  name: Create a memory
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: "{{dev}}/api/memory"
+  body:
+    type: json
+    data: |-
+      {
+        "filename": "my-note",
+        "metadata": {
+          "type": "note",
+          "tags": ["important"]
+        },
+        "content": "# My Note\n\nContent here"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

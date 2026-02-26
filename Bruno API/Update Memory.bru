@@ -1,0 +1,60 @@
+meta {
+  name: Update Memory
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/api/memory/test-memory
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "metadata": {
+      "tags": ["updated", "example"]
+    },
+    "append": "\n\n## New Section\n\nAdditional content appended to the file."
+  }
+}
+
+docs {
+  # Update Memory
+  
+  Updates an existing memory file.
+  
+  ## Path Parameters
+  - `id`: The memory file ID (filename without .md extension)
+  
+  ## Request Body Options
+  
+  ### Option 1: Update metadata and replace content
+  ```json
+  {
+    "metadata": {
+      "tags": ["new-tag"]
+    },
+    "content": "Completely new content"
+  }
+  ```
+  
+  ### Option 2: Append to existing content
+  ```json
+  {
+    "append": "\n\nMore content to add"
+  }
+  ```
+  
+  ### Option 3: Delete specific lines
+  ```json
+  {
+    "delete_lines": ["text to match for deletion"]
+  }
+  ```
+  
+  You can combine these options in a single request.
+  
+  ## Response
+  Returns the updated memory object (same format as Get Memory)
+}
