@@ -1,0 +1,22 @@
+info:
+  name: Chat with LLM
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{dev}}/chat"
+  body:
+    type: json
+    data: |-
+      {
+        "conversation_id": "conv_1",
+          "message": "Soo i was thinking more about tech stuff , workspace is fully react native , ts , but the system is a mess js mixed with ts , no test cases. CMOpany is super fast moving with features shipped in days and broken in hours and fixed in seconds. Sooo I have a bond with the company for 2 years and I need to excel here : )"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

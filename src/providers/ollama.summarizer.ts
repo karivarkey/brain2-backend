@@ -25,8 +25,13 @@ export interface OllamaSummarizerConfig {
 export async function summarizeConversation(
   previousSummary: string,
   rawBuffer: RawMessage[],
-  config: OllamaSummarizerConfig,
+  config?: OllamaSummarizerConfig,
 ): Promise<string> {
+  // Use provided config or fall back to environment variables
+  const apiUrl =
+    config?.apiUrl || process.env.LLAMA_API || "http://localhost:11434";
+  const modelName = config?.modelName || process.env.MODEL_NAME || "llama2";
+
   const combined = `
 PREVIOUS SUMMARY:
 ${previousSummary}
@@ -39,11 +44,11 @@ Preserve facts and emotional progression.
 Do not add interpretation.
   `.trim();
 
-  const res = await fetch(`${config.apiUrl}/api/generate`, {
+  const res = await fetch(`${apiUrl}/api/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: config.modelName,
+      model: modelName,
       prompt: combined,
       stream: false,
     }),

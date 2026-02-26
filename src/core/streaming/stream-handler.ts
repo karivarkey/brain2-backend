@@ -82,7 +82,16 @@ export async function streamWithMutationCapture(
 
   const mutations = extractMutations(fullContent);
 
-  // 3. Apply mutations
+  // 3. Strip mutation blocks from the response
+  let cleanContent = fullContent.replace(
+    /===MEMORY_MUTATION_START===[\s\S]*?===MEMORY_MUTATION_END===/g,
+    "",
+  );
+
+  // Clean up any extra whitespace at the end
+  cleanContent = cleanContent.replace(/\s+$/, "");
+
+  // 4. Apply mutations
   for (const mutation of mutations) {
     try {
       console.error(`🔧 Applying mutation to memory dir: ${memoryDir}`);
@@ -103,5 +112,9 @@ export async function streamWithMutationCapture(
     }
   }
 
-  return fullContent;
+  console.error(
+    `✅ Processing complete. ${mutations.length} mutations applied.`,
+  );
+
+  return cleanContent;
 }

@@ -1,0 +1,4 @@
+name: brain2
+variables:
+  - name: dev
+    value: http://localhost:3000
