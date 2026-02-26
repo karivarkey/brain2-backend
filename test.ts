@@ -2,6 +2,8 @@
 
 import { MemoryStore } from "./src/core/memory";
 import { buildContext } from "./src/core/context";
+import serviceAccount from "./admin.json" assert { type: "json" };
+import admin from "firebase-admin";
 import { buildPrompt, promptToMessages } from "./src/core/prompt";
 import { GeminiProvider } from "./src/providers";
 import { streamWithMutationCapture } from "./src/core/streaming";
@@ -60,6 +62,39 @@ async function main() {
     return;
   }
 
+  if (command == "notify") {
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert(
+          serviceAccount as admin.ServiceAccount,
+        ),
+      });
+    }
+
+    async function sendNotification(
+      token: string,
+      title: string,
+      body: string,
+    ) {
+      return admin.messaging().send({
+        token,
+        notification: { title, body },
+        webpush: {
+          notification: {
+            icon: "https://ai.karivarkey.in/icons/icon-192.png",
+          },
+        },
+      });
+    }
+    sendNotification(
+      "fXo9n7s8Qe2r5v0Zt3a:APA91bHj1mN8u9qLhXkKJzj6l5s8w7y9z0a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6A7B8C9D0E1F2G3H4I5J6K7L8M9N0O1P2Q3R4S5T6U7V8W9X0Y1Z2",
+      "Test Notification",
+      "This is a test notification from the CLI.",
+    )
+      .then(() => console.log("✅ Notification sent successfully"))
+      .catch((err) => console.error("❌ Error sending notification:", err));
+    return;
+  }
   if (command === "ask") {
     const question = args.slice(1).join(" ").trim();
 
