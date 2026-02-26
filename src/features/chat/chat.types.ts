@@ -5,6 +5,7 @@ export interface Message {
   conversation_id: string;
   role: Role;
   content: string;
+  mutations?: MemoryChangeDetail[];
   created_at: string;
 }
 
@@ -20,9 +21,10 @@ export interface SessionState {
   token_estimate: number;
 }
 
-export interface ChatResponse {
-  reply: string;
-  mutationsApplied: number;
+export interface MemoryChangeDetail {
+  action: "create" | "update" | "delete";
+  file: string;
+  summary: string;
 }
 
 export interface ChatRequestBody {
@@ -32,4 +34,5 @@ export interface ChatRequestBody {
 
 export interface ChatResponse {
   reply: string;
+  memoryChanges: MemoryChangeDetail[];
 }

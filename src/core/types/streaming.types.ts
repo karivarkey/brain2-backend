@@ -13,4 +13,5 @@ export interface MutationStreamingOptions {
 export interface StreamingResult {
   response: string;
   mutationsApplied: number;
+  mutations: MemoryMutation[];
 }

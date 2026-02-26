@@ -160,22 +160,60 @@ Start or continue a conversation with memory-augmented context.
 
 ```json
 {
-  "response": "Based on your schedule, you have...",
-  "mutations": [
+  "reply": "Based on your schedule, you have...",
+  "memoryChanges": [
     {
       "action": "update",
       "file": "user",
-      "changes": {
-        "append": "\n- [2026-02-27] Task added"
-      }
+      "summary": "Updated user.md: updated metadata (last_updated), added new content"
+    },
+    {
+      "action": "create",
+      "file": "meeting_notes",
+      "summary": "Created new memory file: meeting_notes.md"
     }
   ]
 }
 ```
 
+**Note:** The `memoryChanges` array provides detailed information about which memory files were modified, including:
+
+- `action`: The type of operation (`create`, `update`, or `delete`)
+- `file`: The memory file name (without .md extension)
+- `summary`: A human-readable description of what changed
+
 #### GET `/chat/:conversation_id`
 
-Retrieve message history for a conversation.
+Retrieve message history for a conversation. Each message includes mutations (memory changes) that occurred with that response.
+
+**Response:**
+
+```json
+[
+  {
+    "id": "msg-uuid-1",
+    "conversation_id": "session-123",
+    "role": "user",
+    "content": "Remember my meeting tomorrow at 3pm",
+    "mutations": [],
+    "created_at": "2026-02-26T10:00:00.000Z"
+  },
+  {
+    "id": "msg-uuid-2",
+    "conversation_id": "session-123",
+    "role": "assistant",
+    "content": "I've saved that to your schedule.",
+    "mutations": [
+      {
+        "action": "update",
+        "file": "user",
+        "summary": "Updated user.md: added new content"
+      }
+    ],
+    "created_at": "2026-02-26T10:00:05.000Z"
+  }
+]
+```
 
 #### GET `/dashboard`
 
@@ -214,11 +252,13 @@ Get comprehensive dashboard statistics including memory counts, session informat
           {
             "role": "user",
             "content": "What's on my schedule today?",
+            "mutations": [],
             "created_at": "2026-02-26T10:29:58.000Z"
           },
           {
             "role": "assistant",
             "content": "You have a team meeting at 3 PM...",
+            "mutations": [],
             "created_at": "2026-02-26T10:30:05.000Z"
           }
         ]
@@ -231,11 +271,19 @@ Get comprehensive dashboard statistics including memory counts, session informat
           {
             "role": "user",
             "content": "Remember to buy groceries",
+            "mutations": [],
             "created_at": "2026-02-25T15:20:00.000Z"
           },
           {
             "role": "assistant",
             "content": "I've added that to your reminders...",
+            "mutations": [
+              {
+                "action": "update",
+                "file": "user",
+                "summary": "Updated user.md: added new content"
+              }
+            ],
             "created_at": "2026-02-25T15:20:10.000Z"
           }
         ]
@@ -322,6 +370,8 @@ LLM can modify memory files through structured mutations:
 
 Mutations are validated and safely applied with error handling.
 
+**Mutation History:** All mutations are automatically stored with assistant messages in the chat history. You can retrieve the complete history of what memories were modified during each conversation by fetching messages via `GET /chat/:conversation_id`.
+
 ## 🎭 JARVIS Persona
 
 The system prompt configures the LLM as "JARVIS" - a professional digital majordomo with:
@@ -396,9 +446,11 @@ bun run embed
 
 ### Project Scripts
 
-- `bun run init` - Initialize chat.db and memory_index.db with required tables
+- `bun run init` - Initialize chat.db and memory_index.db with required tables (includes mutations column)
 - `bun run clean` - Clears chat messages and embedding database
 - `bun run embed` - Re-indexes all memory files with vector embeddings
+
+**Note:** If you're upgrading from a previous version, you need to re-run `bun run init` to add the `mutations` column to your existing database, or delete `chat.db` and run init to start fresh.
 
 ### Testing with Bruno
 

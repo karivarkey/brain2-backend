@@ -18,6 +18,7 @@ chatDb.exec(`
     conversation_id TEXT NOT NULL,
     role TEXT NOT NULL CHECK(role IN ('user', 'assistant')),
     content TEXT NOT NULL,
+    mutations TEXT DEFAULT '[]',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
 

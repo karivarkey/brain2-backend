@@ -6,6 +6,7 @@
 import type { Request, Response } from "express";
 import { getTotalSessions, getAllSessionsWithMessages } from "./chat.db";
 import { getAllMemories } from "../memory/memory.db";
+import type { MemoryChangeDetail } from "./chat.types";
 
 export interface DashboardStats {
   memories: {
@@ -28,6 +29,7 @@ export interface DashboardStats {
       recent_messages: Array<{
         role: string;
         content: string;
+        mutations?: MemoryChangeDetail[];
         created_at: string;
       }>;
     }>;
@@ -82,6 +84,7 @@ export function dashboardController(req: Request, res: Response): void {
           recent_messages: session.messages.map((msg) => ({
             role: msg.role,
             content: msg.content,
+            mutations: msg.mutations || [],
             created_at: msg.created_at,
           })),
         })),

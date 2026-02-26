@@ -156,15 +156,12 @@ ${message}
 
   let reply = "";
 
-  let mutationApplied = false;
-
   const result = await streamWithMutationCapture(provider, messages, {
     memoryDir: MEMORY_DIR,
     onToken: (token) => {
       reply += token;
     },
     onMemoryMutation: async (mutation) => {
-      mutationApplied = true;
       console.log(
         `🔄 Refreshing index after mutation: ${mutation.action} ${mutation.file}`,
       );
@@ -176,7 +173,11 @@ ${message}
   // Use the clean response from the result
   reply = result.response;
 
-  if (!mutationApplied && shouldAutoRemember(message)) {
+  // Collect all mutations for the response
+  const allMutations = [...result.mutations];
+
+  // Check for auto-remember
+  if (result.mutations.length === 0 && shouldAutoRemember(message)) {
     const mutation = buildAutoEventMutation(message);
     console.log(
       `🧠 Auto-saving schedule memory: ${mutation.action} ${mutation.file}`,
@@ -184,13 +185,22 @@ ${message}
     applyMemoryMutation(mutation, MEMORY_DIR);
     await memoryStore.refreshIndex();
     console.log(`✅ Index refreshed - new memories are now searchable`);
+    allMutations.push(mutation);
   }
 
   console.log(`\n💬 Gemini's visible response (${reply.length} chars):`);
   console.log(`"${reply}"`);
   console.log();
 
-  insertMessage(conversation_id, "assistant", reply);
+  // Build detailed memory change information
+  const memoryChanges = allMutations.map((m) => ({
+    action: m.action,
+    file: m.file,
+    summary: buildMutationSummary(m),
+  }));
+
+  // Insert message with mutations
+  insertMessage(conversation_id, "assistant", reply, memoryChanges);
 
   state.raw_buffer.push({ role: "assistant", content: reply });
   state.token_estimate += estimateTokens(reply);
@@ -199,8 +209,40 @@ ${message}
 
   return {
     reply,
-    mutationsApplied:
-      result.mutationsApplied +
-      (mutationApplied ? 0 : shouldAutoRemember(message) ? 1 : 0),
+    memoryChanges,
   };
+}
+
+/**
+ * Build a human-readable summary of a memory mutation
+ */
+function buildMutationSummary(mutation: MemoryMutation): string {
+  const fileName = `${mutation.file}.md`;
+
+  switch (mutation.action) {
+    case "create":
+      return `Created new memory file: ${fileName}`;
+    case "delete":
+      return `Deleted memory file: ${fileName}`;
+    case "update":
+      const changes: string[] = [];
+      if (mutation.changes.metadata) {
+        const metaKeys = Object.keys(mutation.changes.metadata);
+        if (metaKeys.length > 0) {
+          changes.push(`updated metadata (${metaKeys.join(", ")})`);
+        }
+      }
+      if (mutation.changes.append) {
+        changes.push("added new content");
+      }
+      if (
+        mutation.changes.delete_lines &&
+        mutation.changes.delete_lines.length > 0
+      ) {
+        changes.push(`deleted ${mutation.changes.delete_lines.length} line(s)`);
+      }
+      return `Updated ${fileName}: ${changes.join(", ") || "modified"}`;
+    default:
+      return `Modified ${fileName}`;
+  }
 }

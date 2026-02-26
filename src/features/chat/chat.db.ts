@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { randomUUID } from "crypto";
-import type { Message, SessionState } from "./chat.types";
+import type { Message, SessionState, MemoryChangeDetail } from "./chat.types";
 
 const db = new Database("chat.db");
 
@@ -8,20 +8,36 @@ export function insertMessage(
   conversation_id: string,
   role: "user" | "assistant",
   content: string,
+  mutations: MemoryChangeDetail[] = [],
 ): void {
   db.query(
-    `INSERT INTO messages (id, conversation_id, role, content)
-     VALUES (?, ?, ?, ?)`,
-  ).run(randomUUID(), conversation_id, role, content);
+    `INSERT INTO messages (id, conversation_id, role, content, mutations)
+     VALUES (?, ?, ?, ?, ?)`,
+  ).run(
+    randomUUID(),
+    conversation_id,
+    role,
+    content,
+    JSON.stringify(mutations),
+  );
 }
 
 export function getMessages(conversation_id: string): Message[] {
-  return db
-    .query<Message, string>(
+  const rows = db
+    .query<any, string>(
       `SELECT * FROM messages WHERE conversation_id = ?
        ORDER BY created_at ASC`,
     )
     .all(conversation_id);
+
+  return rows.map((row) => ({
+    id: row.id,
+    conversation_id: row.conversation_id,
+    role: row.role,
+    content: row.content,
+    mutations: row.mutations ? JSON.parse(row.mutations) : [],
+    created_at: row.created_at,
+  }));
 }
 
 export function getSessionState(conversation_id: string): SessionState | null {
@@ -121,14 +137,24 @@ export function getLatestSessionMessages(limit: number = 3): {
   }
 
   // Get the recent messages from that conversation
-  const messages = db
-    .query<Message, [string, number]>(
+  const rows = db
+    .query<any, [string, number]>(
       `SELECT * FROM messages 
        WHERE conversation_id = ? 
        ORDER BY created_at DESC 
        LIMIT ?`,
     )
-    .all(latestSession.conversation_id, limit)
+    .all(latestSession.conversation_id, limit);
+
+  const messages: Message[] = rows
+    .map((row) => ({
+      id: row.id,
+      conversation_id: row.conversation_id,
+      role: row.role,
+      content: row.content,
+      mutations: row.mutations ? JSON.parse(row.mutations) : [],
+      created_at: row.created_at,
+    }))
     .reverse(); // Reverse to get chronological order
 
   return {
@@ -169,14 +195,24 @@ export function getAllSessionsWithMessages(limit: number = 3): Array<{
 
   // For each session, get the recent messages
   return sessions.map((session) => {
-    const messages = db
-      .query<Message, [string, number]>(
+    const rows = db
+      .query<any, [string, number]>(
         `SELECT * FROM messages 
          WHERE conversation_id = ? 
          ORDER BY created_at DESC 
          LIMIT ?`,
       )
-      .all(session.conversation_id, limit)
+      .all(session.conversation_id, limit);
+
+    const messages: Message[] = rows
+      .map((row) => ({
+        id: row.id,
+        conversation_id: row.conversation_id,
+        role: row.role,
+        content: row.content,
+        mutations: row.mutations ? JSON.parse(row.mutations) : [],
+        created_at: row.created_at,
+      }))
       .reverse(); // Reverse to get chronological order
 
     return {

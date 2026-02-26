@@ -197,5 +197,6 @@ export async function streamWithMutationCapture(
   return {
     response: cleanContent,
     mutationsApplied: mutations.length,
+    mutations,
   };
 }
