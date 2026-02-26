@@ -3,7 +3,7 @@ import { insertMessage, getSessionState, upsertSessionState } from "./chat.db";
 import { existsSync } from "fs";
 import { join } from "path";
 
-import type { ChatRequestBody, SessionState } from "./chat.types";
+import type { ChatRequestBody, SessionState, ChatResponse } from "./chat.types";
 
 import {
   applyMemoryMutation,
@@ -84,9 +84,10 @@ function estimateTokens(text: string): number {
 const provider = new GeminiProvider({
   apiKey: process.env.GEMINI_API_KEY!,
   modelId: "gemini-2.0-flash",
+  useJsonMode: process.env.GEMINI_JSON_MODE !== "false", // Enabled by default, set to "false" to disable
 });
 
-export async function handleChat(body: ChatRequestBody): Promise<string> {
+export async function handleChat(body: ChatRequestBody): Promise<ChatResponse> {
   const { conversation_id, message } = body;
 
   insertMessage(conversation_id, "user", message);
@@ -163,7 +164,7 @@ ${message}
 
   let mutationApplied = false;
 
-  await streamWithMutationCapture(provider, messages, {
+  const result = await streamWithMutationCapture(provider, messages, {
     memoryDir: MEMORY_DIR,
     onToken: (token) => {
       reply += token;
@@ -177,6 +178,9 @@ ${message}
       console.log(`✅ Index refreshed - new memories are now searchable`);
     },
   });
+
+  // Use the clean response from the result
+  reply = result.response;
 
   if (!mutationApplied && shouldAutoRemember(message)) {
     const mutation = buildAutoEventMutation(message);
@@ -199,5 +203,10 @@ ${message}
 
   upsertSessionState(state);
 
-  return reply;
+  return {
+    reply,
+    mutationsApplied:
+      result.mutationsApplied +
+      (mutationApplied ? 0 : shouldAutoRemember(message) ? 1 : 0),
+  };
 }

@@ -9,3 +9,8 @@ export interface MutationStreamingOptions {
   onMemoryMutation?: (mutation: MemoryMutation) => Promise<void>;
   memoryDir?: string;
 }
+
+export interface StreamingResult {
+  response: string;
+  mutationsApplied: number;
+}

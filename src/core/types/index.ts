@@ -28,4 +28,7 @@ export type {
 export type { PromptMessage } from "./prompt.types";
 
 // Streaming types
-export type { MutationStreamingOptions } from "./streaming.types";
+export type {
+  MutationStreamingOptions,
+  StreamingResult,
+} from "./streaming.types";

@@ -7,8 +7,8 @@ export async function chatController(
   req: Request<{}, {}, ChatRequestBody>,
   res: Response,
 ): Promise<void> {
-  const reply = await handleChat(req.body);
-  res.json({ reply });
+  const result = await handleChat(req.body);
+  res.json(result);
 }
 
 export function getMessagesController(

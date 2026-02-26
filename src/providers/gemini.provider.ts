@@ -1,6 +1,6 @@
 /**
  * Google Gemini LLM Provider
- * Uses @google/genai SDK for streaming
+ * Uses @google/genai SDK for streaming with JSON mode
  */
 
 import { GoogleGenAI } from "@google/genai";
@@ -11,11 +11,64 @@ import type {
   LLMProviderConfig,
 } from "../core/types";
 
+/**
+ * Schema for structured JSON response
+ * Combines conversational response with memory mutations
+ */
+const RESPONSE_SCHEMA = {
+  type: "object",
+  properties: {
+    response: {
+      type: "string",
+      description: "The conversational response to show the user",
+    },
+    mutations: {
+      type: "array",
+      description: "Array of memory mutations to apply (optional)",
+      items: {
+        type: "object",
+        properties: {
+          action: {
+            type: "string",
+            enum: ["create", "update", "delete"],
+            description: "The type of mutation to perform",
+          },
+          file: {
+            type: "string",
+            description: "The name of the memory file (without .md extension)",
+          },
+          changes: {
+            type: "object",
+            properties: {
+              metadata: {
+                type: "object",
+                description: "Metadata fields to update in frontmatter",
+              },
+              append: {
+                type: "string",
+                description: "Content to append to the file",
+              },
+              delete_lines: {
+                type: "array",
+                items: { type: "string" },
+                description: "Lines to delete from the file",
+              },
+            },
+          },
+        },
+        required: ["action", "file", "changes"],
+      },
+    },
+  },
+  required: ["response"],
+};
+
 export class GeminiProvider implements ILLMProvider {
   private client: GoogleGenAI;
   private modelId: string = "gemini-2.0-flash";
+  private useJsonMode: boolean = true;
 
-  constructor(config: LLMProviderConfig = {}) {
+  constructor(config: LLMProviderConfig & { useJsonMode?: boolean } = {}) {
     const apiKey =
       config.apiKey ||
       process.env.GEMINI_API_KEY ||
@@ -31,6 +84,7 @@ export class GeminiProvider implements ILLMProvider {
     // Initialize the new GoogleGenAI client
     this.client = new GoogleGenAI({ apiKey });
     this.modelId = config.modelId || this.modelId;
+    this.useJsonMode = config.useJsonMode ?? true;
   }
 
   async stream(
@@ -55,16 +109,27 @@ export class GeminiProvider implements ILLMProvider {
       let fullContent = "";
       let chunkCount = 0;
 
-      console.error(`🚀 Starting Gemini stream (model: ${this.modelId})`);
+      console.error(
+        `🚀 Starting Gemini stream (model: ${this.modelId}, JSON mode: ${this.useJsonMode})`,
+      );
+
+      // Build generation config
+      const generationConfig: any = this.useJsonMode
+        ? {
+            responseMimeType: "application/json",
+            responseSchema: RESPONSE_SCHEMA,
+          }
+        : undefined;
 
       // Call generateContentStream on the models service
       const streamResult = await this.client.models.generateContentStream({
         model: this.modelId,
         contents: conversationHistory,
         // System instructions are now passed inside a config object
-        config: systemMessage
-          ? { systemInstruction: systemMessage }
-          : undefined,
+        config: {
+          ...(systemMessage ? { systemInstruction: systemMessage } : {}),
+          ...(generationConfig ? { generationConfig } : {}),
+        },
       });
 
       // The returned object itself is the iterable stream
@@ -86,6 +151,25 @@ export class GeminiProvider implements ILLMProvider {
       console.error(
         `✅ Stream complete (${chunkCount} chunks, ${fullContent.length} chars)`,
       );
+
+      // If using JSON mode, validate the response
+      if (this.useJsonMode) {
+        try {
+          const parsed = JSON.parse(fullContent);
+          console.error("✅ JSON response validated successfully");
+          if (parsed.mutations && parsed.mutations.length > 0) {
+            console.error(
+              `📝 ${parsed.mutations.length} mutations included in response`,
+            );
+          }
+        } catch (e) {
+          console.error(
+            "⚠️  Warning: JSON mode enabled but response is not valid JSON",
+          );
+          console.error("   Response:", fullContent.slice(0, 200));
+        }
+      }
+
       return fullContent;
     } catch (error) {
       console.error(

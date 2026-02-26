@@ -1,14 +1,17 @@
 /**
  * Streaming with memory mutation capture
  * Handles token streaming while detecting and capturing memory mutations
+ * Supports both JSON-mode responses and legacy text-with-markers format
  */
 
 import type {
   ILLMProvider,
   LLMMessage,
   MutationStreamingOptions,
+  MemoryMutation,
+  StreamingResult,
 } from "../types";
-import { applyMemoryMutation } from "../memory";
+import { applyMemoryMutation, validateMemoryMutation } from "../memory";
 import {
   extractMutations,
   containsMutationStart,
@@ -16,15 +19,67 @@ import {
 } from "./mutation-parser";
 
 /**
+ * Attempts to parse response as JSON with structured mutations
+ * Returns { response, mutations } if successful, null otherwise
+ */
+function tryParseJsonResponse(content: string): {
+  response: string;
+  mutations: MemoryMutation[];
+} | null {
+  try {
+    // Strip markdown code fences if present (Gemini often wraps JSON in ```json ... ```)
+    let cleanedContent = content.trim();
+
+    // Remove leading ```json or ``` and trailing ```
+    if (cleanedContent.startsWith("```json")) {
+      cleanedContent = cleanedContent.slice(7); // Remove ```json
+    } else if (cleanedContent.startsWith("```")) {
+      cleanedContent = cleanedContent.slice(3); // Remove ```
+    }
+
+    if (cleanedContent.endsWith("```")) {
+      cleanedContent = cleanedContent.slice(0, -3); // Remove trailing ```
+    }
+
+    cleanedContent = cleanedContent.trim();
+
+    const parsed = JSON.parse(cleanedContent);
+
+    if (typeof parsed.response !== "string") {
+      return null;
+    }
+
+    const mutations: MemoryMutation[] = [];
+
+    if (Array.isArray(parsed.mutations)) {
+      for (const mut of parsed.mutations) {
+        try {
+          const validated = validateMemoryMutation(mut);
+          mutations.push(validated);
+        } catch (e) {
+          console.error(
+            "⚠️ Invalid mutation in JSON response, skipping:",
+            e instanceof Error ? e.message : String(e),
+          );
+        }
+      }
+    }
+
+    return { response: parsed.response, mutations };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Streams LLM response while capturing memory mutations.
- * Tokens inside memory markers are hidden from the user output.
- * Mutations are validated and applied on the final complete output string.
+ * Returns structured data with the clean response and mutation count.
  */
 export async function streamWithMutationCapture(
   provider: ILLMProvider,
   messages: LLMMessage[],
   options: MutationStreamingOptions = {},
-): Promise<string> {
+): Promise<StreamingResult> {
   const { onToken, onMemoryMutation, memoryDir = "./memory" } = options;
 
   let fullContent = "";
@@ -77,19 +132,42 @@ export async function streamWithMutationCapture(
     );
   }
 
-  // 2. Parse the final output string for mutations
-  console.error("🔍 Scanning final output for memory mutations...");
+  // 2. Try to parse as JSON first (new structured format)
+  console.error("🔍 Attempting to parse response as JSON...");
+  const jsonParsed = tryParseJsonResponse(fullContent);
 
-  const mutations = extractMutations(fullContent);
+  let cleanContent: string;
+  let mutations: MemoryMutation[];
 
-  // 3. Strip mutation blocks from the response
-  let cleanContent = fullContent.replace(
-    /===MEMORY_MUTATION_START===[\s\S]*?===MEMORY_MUTATION_END===/g,
-    "",
-  );
+  if (jsonParsed) {
+    console.error("✅ JSON response detected and parsed successfully");
+    console.error(`   Response length: ${jsonParsed.response.length} chars`);
+    console.error(`   Mutations found: ${jsonParsed.mutations.length}`);
 
-  // Clean up any extra whitespace at the end
-  cleanContent = cleanContent.replace(/\s+$/, "");
+    cleanContent = jsonParsed.response;
+    mutations = jsonParsed.mutations;
+
+    // For JSON mode, we need to output the response now since it was buffered
+    if (onToken && cleanContent) {
+      // Send the clean response all at once
+      onToken(cleanContent);
+    }
+  } else {
+    console.error("ℹ️ Not JSON format, using legacy text-with-markers parsing");
+    console.error("🔍 Scanning final output for memory mutations...");
+
+    // Legacy parsing: extract mutations from text markers
+    mutations = extractMutations(fullContent);
+
+    // Strip mutation blocks from the response
+    cleanContent = fullContent.replace(
+      /===MEMORY_MUTATION_START===[\s\S]*?===MEMORY_MUTATION_END===/g,
+      "",
+    );
+
+    // Clean up any extra whitespace at the end
+    cleanContent = cleanContent.replace(/\s+$/, "");
+  }
 
   // 4. Apply mutations
   for (const mutation of mutations) {
@@ -116,5 +194,8 @@ export async function streamWithMutationCapture(
     `✅ Processing complete. ${mutations.length} mutations applied.`,
   );
 
-  return cleanContent;
+  return {
+    response: cleanContent,
+    mutationsApplied: mutations.length,
+  };
 }

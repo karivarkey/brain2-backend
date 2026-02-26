@@ -20,6 +20,11 @@ export interface SessionState {
   token_estimate: number;
 }
 
+export interface ChatResponse {
+  reply: string;
+  mutationsApplied: number;
+}
+
 export interface ChatRequestBody {
   conversation_id: string;
   message: string;
