@@ -38,6 +38,9 @@ A sophisticated TypeScript framework for building memory-augmented AI assistants
 # Install dependencies
 bun install
 
+# Initialize databases
+bun run init
+
 # Pull the embedding model (if not already installed)
 ollama pull qwen3-embedding:0.6b
 ```
@@ -173,6 +176,54 @@ Start or continue a conversation with memory-augmented context.
 #### GET `/chat/:conversation_id`
 
 Retrieve message history for a conversation.
+
+#### GET `/dashboard`
+
+Get comprehensive dashboard statistics including memory counts, session information, and recent activity.
+
+**Response:**
+
+```json
+{
+  "memories": {
+    "total": 7,
+    "byType": {
+      "identity_model": 1,
+      "person": 2,
+      "event": 1,
+      "project": 3
+    },
+    "recent": [
+      {
+        "id": "user",
+        "filename": "user.md",
+        "type": "identity_model",
+        "preview": "## Core Identity & Emotional Modeling...",
+        "last_updated": "2026-02-26"
+      }
+    ]
+  },
+  "sessions": {
+    "total": 5,
+    "latest": {
+      "conversation_id": "session-123",
+      "message_count": 3,
+      "messages": [
+        {
+          "role": "user",
+          "content": "What's on my schedule today?",
+          "created_at": "2026-02-26T10:30:00.000Z"
+        },
+        {
+          "role": "assistant",
+          "content": "You have a team meeting at 3 PM...",
+          "created_at": "2026-02-26T10:30:05.000Z"
+        }
+      ]
+    }
+  }
+}
+```
 
 ### Memory Endpoints
 
@@ -310,6 +361,9 @@ last_updated: 2026-02-26
 # Install dependencies
 bun install
 
+# Initialize databases (first time setup)
+bun run init
+
 # Start the development server
 bun run index.ts
 
@@ -322,6 +376,7 @@ bun run embed
 
 ### Project Scripts
 
+- `bun run init` - Initialize chat.db and memory_index.db with required tables
 - `bun run clean` - Clears chat messages and embedding database
 - `bun run embed` - Re-indexes all memory files with vector embeddings
 
