@@ -16,7 +16,9 @@
   },
   "dependencies": {
     "@google/genai": "^1.42.0",
+    "@types/cors": "^2.8.17",
     "@types/express": "^5.0.6",
+    "cors": "^2.8.5",
     "express": "^5.2.1"
   }
 }

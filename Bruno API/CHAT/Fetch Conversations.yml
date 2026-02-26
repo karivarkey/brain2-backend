@@ -8,7 +8,7 @@ http:
   url: "{{prod-ip}}/chat/:chat_id"
   params:
     - name: chat_id
-      value: conv_2
+      value: conv_3
       type: path
   auth: inherit
 

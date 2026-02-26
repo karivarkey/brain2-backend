@@ -1,9 +1,11 @@
 import express from "express";
+import cors from "cors";
 import chatRouter from "./src/features/chat/chat.router";
 import memoryRouter from "./src/features/memory/memory.router";
 
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 app.use("/", chatRouter);
 app.use("/api", memoryRouter);
