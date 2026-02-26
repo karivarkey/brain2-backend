@@ -1,0 +1,20 @@
+meta {
+  name: Create Reminder
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/api/reminders
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "userId": "test-user-001",
+    "fcmToken": "{{fcm_token}}",
+    "naturalLanguage": "Remind me tomorrow at 3 PM to call mom",
+    "timezone": "Asia/Kolkata"
+  }
+}

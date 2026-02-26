@@ -2,6 +2,7 @@ import { insertMessage, getSessionState, upsertSessionState } from "./chat.db";
 
 import { existsSync } from "fs";
 import { join } from "path";
+import { randomUUID } from "crypto";
 
 import type { ChatRequestBody, SessionState, ChatResponse } from "./chat.types";
 
@@ -12,11 +13,12 @@ import {
   promptToMessages,
   streamWithMutationCapture,
 } from "../../core";
-import type { MemoryMutation } from "../../core";
+import type { MemoryMutation, ReminderMutation } from "../../core";
 
 import { GeminiProvider } from "../../providers";
 import { summarizeConversation } from "../../providers";
 import { memoryStore } from "../memory/memory.middleware";
+import { ReminderDb } from "../reminder/reminder.db";
 
 const TOKEN_THRESHOLD = 50_000;
 const MEMORY_DIR = "./memory";
@@ -82,7 +84,7 @@ const provider = new GeminiProvider({
 });
 
 export async function handleChat(body: ChatRequestBody): Promise<ChatResponse> {
-  const { conversation_id, message } = body;
+  const { conversation_id, message, userId, fcmToken, timezone = "UTC" } = body;
 
   insertMessage(conversation_id, "user", message);
 
@@ -142,7 +144,7 @@ ${message}
     );
   });
 
-  const prompt = buildPrompt(enrichedMessage, context);
+  const prompt = buildPrompt(enrichedMessage, context, timezone);
   const messages = promptToMessages(prompt);
 
   console.log(
@@ -155,9 +157,12 @@ ${message}
   console.log();
 
   let reply = "";
+  const remindersCreated: string[] = [];
 
   const result = await streamWithMutationCapture(provider, messages, {
     memoryDir: MEMORY_DIR,
+    userId,
+    fcmToken,
     onToken: (token) => {
       reply += token;
     },
@@ -167,6 +172,37 @@ ${message}
       );
       await memoryStore.refreshIndex();
       console.log(`✅ Index refreshed - new memories are now searchable`);
+    },
+    onReminderMutation: async (reminderMutation: ReminderMutation) => {
+      if (!userId || !fcmToken) {
+        console.error(
+          "⚠️ Cannot create reminder: userId or fcmToken missing from request",
+        );
+        return;
+      }
+
+      const reminderDb = new ReminderDb();
+      const reminder = reminderDb.create({
+        id: randomUUID(),
+        userId,
+        fcmToken,
+        title: reminderMutation.title,
+        body: reminderMutation.body || "",
+        triggerAt:
+          reminderMutation.type === "one_time"
+            ? reminderMutation.datetime!
+            : null,
+        rrule:
+          reminderMutation.type === "recurring"
+            ? reminderMutation.rrule!
+            : null,
+        timezone,
+        lastTriggeredAt: null,
+        active: true,
+      });
+
+      remindersCreated.push(reminder.title);
+      console.log(`⏰ Reminder created: ${reminder.title}`);
     },
   });
 
@@ -210,6 +246,7 @@ ${message}
   return {
     reply,
     memoryChanges,
+    remindersCreated,
   };
 }
 

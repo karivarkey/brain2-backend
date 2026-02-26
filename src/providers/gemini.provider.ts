@@ -13,7 +13,7 @@ import type {
 
 /**
  * Schema for structured JSON response
- * Combines conversational response with memory mutations
+ * Combines conversational response with memory mutations and reminder mutations
  */
 const RESPONSE_SCHEMA = {
   type: "object",
@@ -57,6 +57,45 @@ const RESPONSE_SCHEMA = {
           },
         },
         required: ["action", "file", "changes"],
+      },
+    },
+    reminders: {
+      type: "array",
+      description:
+        "Array of reminder mutations to create (optional). Use this when user asks to be reminded about something.",
+      items: {
+        type: "object",
+        properties: {
+          action: {
+            type: "string",
+            enum: ["create_reminder"],
+            description: "Always 'create_reminder' for reminders",
+          },
+          title: {
+            type: "string",
+            description: "Short reminder title (what to remind about)",
+          },
+          body: {
+            type: "string",
+            description: "Optional detailed reminder message",
+          },
+          type: {
+            type: "string",
+            enum: ["one_time", "recurring"],
+            description:
+              "one_time for single reminder, recurring for repeating",
+          },
+          datetime: {
+            type: "string",
+            description: "ISO 8601 UTC datetime for one_time reminders",
+          },
+          rrule: {
+            type: "string",
+            description:
+              "RRULE string for recurring reminders (e.g., FREQ=DAILY;BYHOUR=9;BYMINUTE=0)",
+          },
+        },
+        required: ["action", "title", "type"],
       },
     },
   },

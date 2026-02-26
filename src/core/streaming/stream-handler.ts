@@ -10,6 +10,7 @@ import type {
   MutationStreamingOptions,
   MemoryMutation,
   StreamingResult,
+  ReminderMutation,
 } from "../types";
 import { applyMemoryMutation, validateMemoryMutation } from "../memory";
 import {
@@ -20,11 +21,12 @@ import {
 
 /**
  * Attempts to parse response as JSON with structured mutations
- * Returns { response, mutations } if successful, null otherwise
+ * Returns { response, mutations, reminders } if successful, null otherwise
  */
 function tryParseJsonResponse(content: string): {
   response: string;
   mutations: MemoryMutation[];
+  reminders: ReminderMutation[];
 } | null {
   try {
     // Strip markdown code fences if present (Gemini often wraps JSON in ```json ... ```)
@@ -50,7 +52,9 @@ function tryParseJsonResponse(content: string): {
     }
 
     const mutations: MemoryMutation[] = [];
+    const reminders: ReminderMutation[] = [];
 
+    // Parse memory mutations
     if (Array.isArray(parsed.mutations)) {
       for (const mut of parsed.mutations) {
         try {
@@ -65,7 +69,30 @@ function tryParseJsonResponse(content: string): {
       }
     }
 
-    return { response: parsed.response, mutations };
+    // Parse reminder mutations
+    if (Array.isArray(parsed.reminders)) {
+      for (const rem of parsed.reminders) {
+        try {
+          if (
+            rem.action === "create_reminder" &&
+            rem.title &&
+            rem.type &&
+            (rem.type === "one_time" || rem.type === "recurring")
+          ) {
+            reminders.push(rem as ReminderMutation);
+          } else {
+            console.error("⚠️ Invalid reminder mutation, skipping:", rem);
+          }
+        } catch (e) {
+          console.error(
+            "⚠️ Error validating reminder mutation:",
+            e instanceof Error ? e.message : String(e),
+          );
+        }
+      }
+    }
+
+    return { response: parsed.response, mutations, reminders };
   } catch {
     return null;
   }
@@ -80,7 +107,12 @@ export async function streamWithMutationCapture(
   messages: LLMMessage[],
   options: MutationStreamingOptions = {},
 ): Promise<StreamingResult> {
-  const { onToken, onMemoryMutation, memoryDir = "./memory" } = options;
+  const {
+    onToken,
+    onMemoryMutation,
+    onReminderMutation,
+    memoryDir = "./memory",
+  } = options;
 
   let fullContent = "";
   let isHidingStream = false;
@@ -138,14 +170,17 @@ export async function streamWithMutationCapture(
 
   let cleanContent: string;
   let mutations: MemoryMutation[];
+  let reminderMutations: ReminderMutation[];
 
   if (jsonParsed) {
     console.error("✅ JSON response detected and parsed successfully");
     console.error(`   Response length: ${jsonParsed.response.length} chars`);
     console.error(`   Mutations found: ${jsonParsed.mutations.length}`);
+    console.error(`   Reminders found: ${jsonParsed.reminders.length}`);
 
     cleanContent = jsonParsed.response;
     mutations = jsonParsed.mutations;
+    reminderMutations = jsonParsed.reminders;
 
     // For JSON mode, we need to output the response now since it was buffered
     if (onToken && cleanContent) {
@@ -158,6 +193,7 @@ export async function streamWithMutationCapture(
 
     // Legacy parsing: extract mutations from text markers
     mutations = extractMutations(fullContent);
+    reminderMutations = [];
 
     // Strip mutation blocks from the response
     cleanContent = fullContent.replace(
@@ -169,7 +205,7 @@ export async function streamWithMutationCapture(
     cleanContent = cleanContent.replace(/\s+$/, "");
   }
 
-  // 4. Apply mutations
+  // 4. Apply memory mutations
   for (const mutation of mutations) {
     try {
       console.error(`🔧 Applying mutation to memory dir: ${memoryDir}`);
@@ -190,13 +226,39 @@ export async function streamWithMutationCapture(
     }
   }
 
+  // 5. Process reminder mutations
+  let remindersCreated = 0;
+  for (const reminder of reminderMutations) {
+    try {
+      console.error(`⏰ Processing reminder: "${reminder.title}"`);
+
+      // Notify caller
+      if (onReminderMutation) {
+        await onReminderMutation(reminder);
+        remindersCreated++;
+        console.error(`✅ Reminder created successfully: ${reminder.title}`);
+      } else {
+        console.error(
+          "⚠️ No onReminderMutation callback provided, skipping reminder creation",
+        );
+      }
+    } catch (e) {
+      console.error(
+        "❌ Failed to create reminder:",
+        e instanceof Error ? e.message : String(e),
+      );
+    }
+  }
+
   console.error(
-    `✅ Processing complete. ${mutations.length} mutations applied.`,
+    `✅ Processing complete. ${mutations.length} mutations applied, ${remindersCreated} reminders created.`,
   );
 
   return {
     response: cleanContent,
     mutationsApplied: mutations.length,
     mutations,
+    reminderMutations,
+    remindersCreated,
   };
 }

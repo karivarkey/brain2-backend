@@ -1,0 +1,19 @@
+info:
+  name: GET ALL REMINDERS
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{dev}}/reminders/:user_id"
+  params:
+    - name: user_id
+      value: ""
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

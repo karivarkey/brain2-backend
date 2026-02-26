@@ -8,22 +8,32 @@ import { formatContextBlock } from "../context";
 import { SYSTEM_PROMPT } from "./templates";
 
 /**
- * Gets current date and time in a formatted string
+ * Gets current date and time in both UTC and user's timezone
  */
-function getCurrentDateTime(): string {
+function getCurrentDateTime(timezone: string = "UTC"): string {
   const now = new Date();
-  const dateStr = now.toLocaleDateString("en-US", {
+
+  // UTC time
+  const utcStr = now.toISOString();
+
+  // User's local time
+  const localDateStr = now.toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: timezone,
   });
-  const timeStr = now.toLocaleTimeString("en-US", {
+  const localTimeStr = now.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
+    second: "2-digit",
     hour12: true,
+    timeZone: timezone,
   });
-  return `${dateStr} at ${timeStr}`;
+
+  return `${localDateStr} at ${localTimeStr} (${timezone})
+UTC Time: ${utcStr}`;
 }
 
 /**
@@ -33,9 +43,10 @@ function getCurrentDateTime(): string {
 export function buildPrompt(
   userMessage: string,
   contextBlock: ContextBlock,
+  timezone: string = "UTC",
 ): PromptMessage {
   const contextBlockStr = formatContextBlock(contextBlock);
-  const currentDateTime = getCurrentDateTime();
+  const currentDateTime = getCurrentDateTime(timezone);
 
   // Inject current date/time into system prompt
   const systemPromptWithDateTime = `CURRENT DATE & TIME: ${currentDateTime}

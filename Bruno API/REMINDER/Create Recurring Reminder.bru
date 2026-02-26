@@ -1,0 +1,20 @@
+meta {
+  name: Create Recurring Reminder
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/api/reminders
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "userId": "test-user-001",
+    "fcmToken": "{{fcm_token}}",
+    "naturalLanguage": "Remind me every weekday at 9 AM to check emails",
+    "timezone": "Asia/Kolkata"
+  }
+}

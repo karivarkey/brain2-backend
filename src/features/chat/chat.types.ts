@@ -30,9 +30,13 @@ export interface MemoryChangeDetail {
 export interface ChatRequestBody {
   conversation_id: string;
   message: string;
+  userId?: string;
+  fcmToken?: string;
+  timezone?: string;
 }
 
 export interface ChatResponse {
   reply: string;
   memoryChanges: MemoryChangeDetail[];
+  remindersCreated?: string[];
 }

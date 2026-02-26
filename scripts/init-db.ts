@@ -33,6 +33,25 @@ chatDb.exec(`
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS reminders (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    fcm_token TEXT NOT NULL,
+    title TEXT NOT NULL,
+    body TEXT DEFAULT '',
+    trigger_at TEXT,
+    rrule TEXT,
+    timezone TEXT NOT NULL DEFAULT 'UTC',
+    last_triggered_at TEXT,
+    active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_reminders_user ON reminders(user_id);
+  CREATE INDEX IF NOT EXISTS idx_reminders_trigger ON reminders(trigger_at, active);
+  CREATE INDEX IF NOT EXISTS idx_reminders_active ON reminders(active);
 `);
 
 chatDb.close();

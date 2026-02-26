@@ -1,0 +1,15 @@
+meta {
+  name: List Reminders
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/api/reminders/test-user-001
+  body: none
+  auth: none
+}
+
+params:query {
+  active: true
+}

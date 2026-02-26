@@ -31,4 +31,5 @@ export type { PromptMessage } from "./prompt.types";
 export type {
   MutationStreamingOptions,
   StreamingResult,
+  ReminderMutation,
 } from "./streaming.types";
